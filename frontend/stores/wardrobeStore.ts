@@ -23,7 +23,7 @@ interface WardrobeState {
   selectedCategory: string;
 
   sortMode: SortMode;
-  
+
   isLoading: boolean;
   error: string | null;
 
@@ -71,24 +71,37 @@ export const useWardrobeStore = create<WardrobeState>((set, get) => ({
     }
   },
 
+  //without proper error handling the user wouldn't understand the reason rejection of their action, which is not a good hallmark of a user friendly interface
   addItem: async (req) => {
     set({ error: null });
-    const item = await wardrobeAPI.addItem(req);
+    try {
+      const item = await wardrobeAPI.addItem(req);
 
-    const sorted = sortItems([item, ...get().items], get().sortMode);
+      const sorted = sortItems([item, ...get().items], get().sortMode);
 
-    set({ items: sorted });
-    return item;
+      set({ items: sorted });
+      return item;
+    } catch (e: unknown) {
+      set({
+        error: friendlyError(e, "Couldn't add item. Please try again.")
+      });
+    }
   },
 
   deleteItem: async (id) => {
     set({ error: null });
-    await wardrobeAPI.deleteItem(id);
+    try {
+      await wardrobeAPI.deleteItem(id);
 
-    const filtered = get().items.filter((i) => i.id !== id);
-    const sorted = sortItems(filtered, get().sortMode);
+      const filtered = get().items.filter((i) => i.id !== id);
+      const sorted = sortItems(filtered, get().sortMode);
 
-    set({ items: sorted });
+      set({ items: sorted });
+    } catch (e: unknown) {
+      set({
+        error: friendlyError(e, "Couldn't delete item. Please try again.")
+      });
+    }
   },
 
   setCategory: (category) => {
